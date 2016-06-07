@@ -19,8 +19,7 @@ from zappa.wsgi import common_log, create_wsgi_request
 # if being used from inside a python context.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zappa_settings")
 import django
-django.setup()
-from django.conf import settings
+
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -50,9 +49,10 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     except:
         logger.error("Error in stage_vars")
     # If in DEBUG mode, log all raw incoming events.
+    django.setup()
+    from django.conf import settings
     if settings.DEBUG:
         logger.info('Zappa Event: {}'.format(event))
-
     # This is a normal HTTP request
     if event.get('method', None):
 
@@ -84,10 +84,10 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         # The DOCTYPE ensures that the page still renders in the browser.
         exception = None
         if response.status_code in ERROR_CODES:
-            # content = u"<!DOCTYPE html>" + unicode(response.status_code) + unicode('<meta charset="utf-8" />') + response.data.encode('utf-8')
-            content = response.data.encode('utf-8')
+            content = u"<!DOCTYPE html>" + unicode(response.status_code) + unicode('<meta charset="utf-8" />') + response.data.encode('utf-8')
+            # content = response.data.encode('utf-8')
             b64_content = base64.b64encode(content)
-            exception = b64_content
+            exception = (b64_content)
         # Internal are changed to become relative redirects
         # so they still work for apps on raw APIGW and on a domain.
         elif 300 <= response.status_code < 400 and response.has_header('Location'):

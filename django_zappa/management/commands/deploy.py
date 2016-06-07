@@ -58,7 +58,8 @@ class Command(ZappaCommand):
                                                        timeout=self.timeout)
 
         # Create and configure the API Gateway
-        api_id = self.zappa.create_api_gateway_routes(lambda_arn, self.api_name)
+        api_id = self.zappa.create_api_gateway_routes(lambda_arn, self.api_name,
+                                                      self.zappa_settings[self.api_stage].get('mappings'))
 
         # Deploy the API!
         endpoint_url = self.zappa.deploy_api_gateway(api_id, self.api_stage)

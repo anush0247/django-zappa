@@ -175,7 +175,7 @@ class ZappaCommand(BaseCommand):
         handler_file = os.sep.join(current_file.split(os.sep)[
                                    0:-2]) + os.sep + 'handler.py'
 
-        exclude = ['static', 'media']
+        exclude = ['static', 'media'] + self.zappa_settings[self.api_stage].get('exclude', [])
         self.zip_path = self.zappa.create_lambda_zip(
             self.lambda_name,
             handler_file=handler_file,
