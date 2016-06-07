@@ -12,8 +12,8 @@ from django.utils.text import slugify
 
 from zappa.zappa import Zappa
 
-class ZappaCommand(BaseCommand):
 
+class ZappaCommand(BaseCommand):
     # Management command
     can_import_settings = True
     requires_system_checks = False
@@ -24,6 +24,7 @@ class ZappaCommand(BaseCommand):
     api_stage = None
     project_name = None
     lambda_name = None
+    api_name = None
     s3_bucket_name = None
     settings_file = None
     zip_path = None
@@ -65,12 +66,13 @@ class ZappaCommand(BaseCommand):
             self.api_stage = options['environment'][0]
         else:
             self.api_stage = options['environment']
-        self.lambda_name = slugify(self.project_name + '-' + self.api_stage).replace("_","-")
+        self.lambda_name = self.zappa_settings[self.api_stage].get('lambda_function', slugify(
+            self.project_name + '-' + self.api_stage).replace("_", "-"))
         if self.api_stage not in self.zappa_settings.keys():
             print("Please make sure that the environment '" + self.api_stage +
                   "' is defined in your ZAPPA_SETTINGS in your settings file before deploying.")
             raise ImproperlyConfigured
-
+        self.api_name = self.zappa_settings[self.api_stage].get('api_name', self.lambda_name)
         # Load environment-specific settings
         self.s3_bucket_name = self.zappa_settings[self.api_stage]['s3_bucket']
         self.vpc_config = self.zappa_settings[
@@ -79,7 +81,6 @@ class ZappaCommand(BaseCommand):
             self.api_stage].get('memory_size', 512)
         self.timeout = self.zappa_settings[
             self.api_stage].get('timeout', 30)
-
 
         custom_settings = [
             'http_methods',
@@ -92,17 +93,15 @@ class ZappaCommand(BaseCommand):
         for setting in custom_settings:
             if self.zappa_settings[self.api_stage].has_key(setting):
                 setattr(self.zappa, setting, self.zappa_settings[
-                        self.api_stage][setting])
-
-
+                    self.api_stage][setting])
 
     def get_django_settings_file(self):
         if not self.get_settings_location().startswith('s3://'):
             self.settings_file = self.zappa_settings[
-            self.api_stage]['settings_file']
+                self.api_stage]['settings_file']
             if '~' in self.settings_file:
                 self.settings_file = self.settings_file.replace(
-                '~', os.path.expanduser('~'))
+                    '~', os.path.expanduser('~'))
             self.check_settings_file()
         else:
             self.settings_file = self.download_from_s3(*self.parse_s3_url(self.get_settings_location()))
@@ -124,8 +123,8 @@ class ZappaCommand(BaseCommand):
         """
         return self.zappa_settings[self.api_stage]['settings_file']
 
-    def download_from_s3(self,bucket_name,s3_key,
-                     output_filename='temp_zappa_settings.py'):
+    def download_from_s3(self, bucket_name, s3_key,
+                         output_filename='temp_zappa_settings.py'):
         """
         Download a file from S3
         :param bucket_name: Name of the S3 bucket (string)
@@ -137,22 +136,21 @@ class ZappaCommand(BaseCommand):
         s3 = boto3.resource('s3')
         bucket = s3.Bucket(bucket_name)
         try:
-            s3.meta.client.head_object(Bucket=bucket_name,Key=s3_key)
+            s3.meta.client.head_object(Bucket=bucket_name, Key=s3_key)
         except botocore.exceptions.ClientError:
             return False
         print(u'Downloading the settings file ({0}) from S3'.format(s3_key))
-        new_file = bucket.download_file(s3_key,output_filename)
+        new_file = bucket.download_file(s3_key, output_filename)
         return output_filename
 
-    def parse_s3_url(self,s3_url):
+    def parse_s3_url(self, s3_url):
         """
         Parse the S3 url. Format: s3://mybucket:path/to/my/key
         Example: s3://settings-bucket:/production_settings.py
         :param s3_url: Path to the file hosted on S3
         :return:
         """
-        return s3_url.replace('s3://','').split(':')
-
+        return s3_url.replace('s3://', '').split(':')
 
     def load_credentials(self):
         session = None
@@ -179,11 +177,11 @@ class ZappaCommand(BaseCommand):
 
         exclude = ['static', 'media']
         self.zip_path = self.zappa.create_lambda_zip(
-                self.lambda_name,
-                handler_file=handler_file,
-                use_precompiled_packages=self.zappa_settings.get('use_precompiled_packages', True),
-                exclude=exclude
-            )
+            self.lambda_name,
+            handler_file=handler_file,
+            use_precompiled_packages=self.zappa_settings.get('use_precompiled_packages', True),
+            exclude=exclude
+        )
 
         # Add this environment's Django settings to that zipfile
         with open(self.settings_file, 'r') as f:
@@ -195,7 +193,7 @@ class ZappaCommand(BaseCommand):
                 script_name = ''
 
             all_contents = all_contents + \
-                '\n# Automatically added by Zappa:\nSCRIPT_NAME=\'/' + script_name + '\'\n'
+                           '\n# Automatically added by Zappa:\nSCRIPT_NAME=\'/' + script_name + '\'\n'
             f.close()
 
         with open('zappa_settings.py', 'w') as f:
@@ -208,7 +206,7 @@ class ZappaCommand(BaseCommand):
         os.unlink('zappa_settings.py')
 
     def remove_s3_local_settings(self):
-        #Remove the settings file if downloaded from S3
+        # Remove the settings file if downloaded from S3
         if self.get_settings_location().startswith('s3://'):
             os.remove(self.settings_file)
 
@@ -219,7 +217,6 @@ class ZappaCommand(BaseCommand):
 
         if self.zappa_settings[self.api_stage].get('delete_zip', True):
             os.remove(self.zip_path)
-
 
     def remove_uploaded_zip(self):
         """
