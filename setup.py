@@ -18,7 +18,7 @@ setup(
     version='0.13.1',
     packages=['django_zappa'],
     dependency_links=[
-        'git+ssh://git@github.com:eldos-dl/Zappa.git@develop',
+        'git+ssh://git@github.com:eldos-dl/Zappa.git@develop#egg=zappa-0.18.2',
     ],
     install_requires=required,
     include_package_data=True,
