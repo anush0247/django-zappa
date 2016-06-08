@@ -18,6 +18,7 @@ setup(
     version='0.13.1',
     packages=['django_zappa'],
     install_requires=required,
+    dependency_links=['git+https://github.com/eldos-dl/Zappa.git@develop'],
     include_package_data=True,
     license='MIT License',
     description='Serverless Django With AWS Lambda + API Gateway',
