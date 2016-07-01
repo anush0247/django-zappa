@@ -29,7 +29,7 @@ class Command(ZappaCommand):
 
         # Load your AWS credentials from ~/.aws/credentials
         self.load_credentials()
-        client = boto3.client('apigateway')
+        client = boto3.client('apigateway', region_name=self.zappa_settings[self.api_stage].get('aws_region', 'eu-west-1'))
         apis = filter(lambda api: api['name'] == self.api_name, client.get_rest_apis(limit=500)['items'])
         if len(apis) > 1:
             self.stdout.write(self.style.WARN(
