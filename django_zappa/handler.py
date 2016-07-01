@@ -55,7 +55,6 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         logger.info('Zappa Event: {}'.format(event))
     # This is a normal HTTP request
     if event.get('method', None):
-
         # Create the environment for WSGI and handle the request
         environ = create_wsgi_request(event, script_name=settings.SCRIPT_NAME)
 
