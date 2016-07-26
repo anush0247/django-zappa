@@ -52,7 +52,8 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     django.setup()
     from django.conf import settings
     if settings.DEBUG:
-        logger.info('Zappa Event: {}'.format(event))
+        # logger.info('Zappa Event: {}'.format(event))
+        pass
     # This is a normal HTTP request
     if event.get('method', None):
         # Create the environment for WSGI and handle the request
