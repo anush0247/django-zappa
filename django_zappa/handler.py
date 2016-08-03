@@ -57,7 +57,7 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     # This is a normal HTTP request
     if event.get('method', None):
         # Create the environment for WSGI and handle the request
-        environ = create_wsgi_request(event, script_name=settings.SCRIPT_NAME)
+        environ = create_wsgi_request(event, script_name='')
 
         # We are always on https on Lambda, so tell our wsgi app that.
         environ['HTTPS'] = 'on'
