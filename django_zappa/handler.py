@@ -20,7 +20,6 @@ from zappa.wsgi import common_log, create_wsgi_request
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zappa_settings")
 import django
 
-
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -54,6 +53,7 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     if settings.DEBUG:
         # logger.info('Zappa Event: {}'.format(event))
         pass
+    print event
     # This is a normal HTTP request
     if event.get('method', None):
         # Create the environment for WSGI and handle the request
@@ -84,7 +84,8 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         # The DOCTYPE ensures that the page still renders in the browser.
         exception = None
         if response.status_code in ERROR_CODES:
-            content = u"<!DOCTYPE html>" + unicode(response.status_code) + unicode('<meta charset="utf-8" />') + response.data.encode('utf-8')
+            content = u"<!DOCTYPE html>" + unicode(response.status_code) + unicode(
+                '<meta charset="utf-8" />') + response.data.encode('utf-8')
             # content = response.data.encode('utf-8')
             b64_content = base64.b64encode(content)
             exception = (b64_content)
@@ -116,3 +117,17 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         # Read the log for now. :[]
         management.call_command(*event['command'].split(' '))
         return {}
+
+    elif event.get("Key", None):
+        from django.test.utils import get_runner
+        TestRunner = get_runner(settings)
+        from StringIO import StringIO
+        mock_stream = StringIO()
+        test_runner = TestRunner(stream=mock_stream)
+        mock_stream.seek(0)
+        log_data = mock_stream.read()
+        print log_data
+        failures = test_runner.run_tests([event["Key"]])
+        if failures:
+            raise Exception({"Logs": log_data})
+        return {"Logs": log_data}
