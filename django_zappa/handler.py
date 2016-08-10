@@ -41,6 +41,10 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     The request get fed it to Django, processes the Django response, and returns that
     back to the API Gateway.
     """
+    import json
+    if isinstance(event, unicode) or isinstance(event, str):
+        print("in the json converter")
+        event = json.loads(event)
     time_start = datetime.datetime.now()
     try:
         for key in event.get('stage_vars', dict()).keys():
@@ -53,7 +57,6 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     if settings.DEBUG:
         # logger.info('Zappa Event: {}'.format(event))
         pass
-    print event
     # This is a normal HTTP request
     if event.get('method', None):
         # Create the environment for WSGI and handle the request
@@ -119,15 +122,15 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         return {}
 
     elif event.get("Key", None):
+        test_case = event["Key"]
+        print test_case
+        # from django.core import management
+        # management.call_command(*["test", test_case])
+        # return {}
         from django.test.utils import get_runner
         TestRunner = get_runner(settings)
-        from StringIO import StringIO
-        mock_stream = StringIO()
-        test_runner = TestRunner(stream=mock_stream)
-        mock_stream.seek(0)
-        log_data = mock_stream.read()
-        print log_data
-        failures = test_runner.run_tests([event["Key"]])
+        test_runner = TestRunner()
+        failures = test_runner.run_tests([test_case])
         if failures:
-            raise Exception({"Logs": log_data})
-        return {"Logs": log_data}
+            raise Exception({"Success": "OK","ErrorMsg": "Test Failed"})
+        return {"Success": "NOT_OK","ErrorMsg": ""}
