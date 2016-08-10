@@ -6,19 +6,19 @@ import base64
 import datetime
 import logging
 import os
+import uuid
+import django
 
-from django.core.handlers.wsgi import WSGIHandler
 from django.core.wsgi import get_wsgi_application
-
+from django.test.utils import get_runner
 from werkzeug.wrappers import Response
-
 from zappa.middleware import ZappaWSGIMiddleware
 from zappa.wsgi import common_log, create_wsgi_request
 
 # Django requires settings and an explicit call to setup()
 # if being used from inside a python context.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zappa_settings")
-import django
+
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -123,11 +123,13 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
 
     elif event.get("Key", None):
         test_case = event["Key"]
-        print test_case
-        # from django.core import management
-        # management.call_command(*["test", test_case])
-        # return {}
-        from django.test.utils import get_runner
+        print(test_case)
+
+        settings.DATABASES["default"]["TEST"] = {
+            'NAME': '/tmp/%s.sqlite3' % str(uuid.uuid4()),
+            'ENGINE': 'django.db.backends.sqlite3'
+        }
+
         TestRunner = get_runner(settings)
         test_runner = TestRunner()
         failures = test_runner.run_tests([test_case])
