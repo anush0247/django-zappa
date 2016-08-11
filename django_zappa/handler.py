@@ -128,5 +128,5 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         test_runner = TestRunner()
         failures = test_runner.run_tests([test_case])
         if failures:
-            raise Exception({"Success": "OK","ErrorMsg": "Test Failed"})
-        return {"Success": "NOT_OK","ErrorMsg": ""}
+            raise Exception({"Success": "NOT_OK","ErrorMsg": "Test Failed"})
+        return {"Success": "OK","ErrorMsg": ""}
