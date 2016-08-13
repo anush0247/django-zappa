@@ -19,6 +19,23 @@ class Command(ZappaCommand):
             default=None,
             help='Use a supplied zip file')
 
+    def remove_old_version_lambda_functions(self):
+        client = self.zappa.boto_session.client('lambda')
+        versions_response = client.list_versions_by_function(FunctionName=self.lambda_name)
+        available_versions_list = []
+        for version in versions_response['Versions']:
+            available_versions_list.append(version['Version'])
+        print("----- All Available Versions ------")
+        aliases_response = client.list_aliases(FunctionName=self.lambda_name)
+        aliased_versions_list = []
+        for alias in aliases_response['Aliases']:
+            aliased_versions_list.append(alias['FunctionVersion'])
+        untagged_versions = set(available_versions_list) - set(aliased_versions_list) - {'$LATEST'}
+        print("Versions that are not aliased", untagged_versions)
+        for version in untagged_versions:
+            print("Deleting Untagged Versions")
+            print(client.delete_function(FunctionName=self.lambda_name, Qualifier=version))
+
     def handle(self, *args, **options):  # NoQA
         """
         Execute the command.
@@ -48,6 +65,8 @@ class Command(ZappaCommand):
         # You'll also need to define the path to your lambda_handler code.
         lambda_arn = self.zappa.update_lambda_function(
             self.s3_bucket_name, self.zip_path, self.lambda_name)
+
+        self.remove_old_version_lambda_functions()
 
         # Remove the uploaded zip from S3, because it is now registered..
         self.zappa.remove_from_s3(self.zip_path, self.s3_bucket_name)
