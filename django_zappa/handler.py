@@ -124,20 +124,6 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     elif event.get("Key", None):
         test_case = event["Key"]
         print(test_case)
-
-        import uuid
-        DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.sqlite3',
-                'NAME': '/tmp/%s.sqlite3' % str(uuid.uuid4()),
-                'TEST': {
-                    'NAME': '/tmp/%s.sqlite3' % str(uuid.uuid4()),
-                    'ENGINE': 'django.db.backends.sqlite3'
-                }
-            }
-        }
-        settings.DATABASES = DATABASES
-
         TestRunner = get_runner(settings)
         test_runner = TestRunner()
         failures = test_runner.run_tests([test_case])
