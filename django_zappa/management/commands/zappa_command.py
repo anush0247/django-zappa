@@ -203,7 +203,7 @@ class ZappaCommand(BaseCommand):
             lambda_zip.write('zappa_settings.py', 'zappa_settings.py')
             lambda_zip.close()
 
-        # os.unlink('zappa_settings.py')
+        os.unlink('zappa_settings.py')
 
     def remove_s3_local_settings(self):
         # Remove the settings file if downloaded from S3
