@@ -160,8 +160,13 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
 
     elif event.get("function", None):
         function_split = event.get("function").split(".")
+        print(function_split)
         import_str = ".".join(function_split[0:-1])
         function_name = function_split[-1]
-        function = getattr(importlib.import_module(import_str), function_name)
-        input_data = event.get("function_input", {})
-        return function(**input_data)
+        try:
+            function = getattr(importlib.import_module(import_str), function_name)
+            input_data = event.get("function_input", {})
+            return function(**input_data)
+        except ImportError as err:
+            print(err)
+            raise
