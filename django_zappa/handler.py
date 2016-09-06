@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function
 from __future__ import unicode_literals
 
 import base64
 import datetime
+import importlib
 import logging
 import os
-import uuid
-import django
 
+import django
 from django.core.wsgi import get_wsgi_application
 from django.test.utils import get_runner
 from werkzeug.wrappers import Response
@@ -18,7 +19,6 @@ from zappa.wsgi import common_log, create_wsgi_request
 # Django requires settings and an explicit call to setup()
 # if being used from inside a python context.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "zappa_settings")
-
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -34,6 +34,25 @@ def start(a, b):
     return
 
 
+def get_stage_vars(zappa_settings, api_stage):
+    import boto3
+    api_name = zappa_settings[api_stage]["lambda_function"]
+    client = boto3.client('apigateway', region_name=zappa_settings[api_stage].get('aws_region', 'ap-southeast-1'))
+    apis = filter(lambda api: api['name'] == api_name, client.get_rest_apis(limit=500)['items'])
+    if len(apis) > 1:
+        print('Found multiple apis with name %s. Choosing the first one to import stage_vars' % api_name)
+        raise
+    elif len(apis) == 0:
+        print('No apis found')
+        raise
+    api_id = apis[0]["id"]
+    if not api_id:
+        print('Cannot find any api with name %s' % api_name)
+        raise
+    stage_vars = client.get_stage(restApiId=api_id, stageName=api_stage)['variables']
+    return stage_vars
+
+
 def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
     """
     An AWS Lambda function which parses specific API Gateway input into a WSGI request.
@@ -46,6 +65,14 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         print("in the json converter")
         event = json.loads(event)
     time_start = datetime.datetime.now()
+    if event.get("function", None):
+        stage = event.get("stage", 'alpha')
+        try:
+            zappa_settings = getattr(importlib.import_module('zappa_deploy'), 'ZAPPA_SETTINGS')
+            event["stage_vars"] = get_stage_vars(zappa_settings, stage)
+        except ImportError as err:
+            print(err)
+            raise
     try:
         for key in event.get('stage_vars', dict()).keys():
             os.environ[key.upper()] = event['stage_vars'][key]
@@ -128,5 +155,13 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         test_runner = TestRunner()
         failures = test_runner.run_tests([test_case])
         if failures:
-            raise Exception({"Success": "NOT_OK","ErrorMsg": "Test Failed"})
-        return {"Success": "OK","ErrorMsg": ""}
+            raise Exception({"Success": "NOT_OK", "ErrorMsg": "Test Failed"})
+        return {"Success": "OK", "ErrorMsg": ""}
+
+    elif event.get("function", None):
+        function_split = event.get("function").split(".")
+        import_str = ".".join(function_split[0:-1])
+        function_name = function_split[-1]
+        function = getattr(importlib.import_module(import_str), function_name)
+        input_data = event.get("function_input", {})
+        return function(**input_data)
