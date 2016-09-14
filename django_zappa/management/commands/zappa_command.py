@@ -187,10 +187,10 @@ class ZappaCommand(BaseCommand):
         with open(self.settings_file, 'r') as f:
             contents = f.read()
             all_contents = contents
-            if not self.zappa_settings[self.api_stage].has_key('domain'):
-                script_name = self.api_stage
-            else:
-                script_name = ''
+            # if not self.zappa_settings[self.api_stage].has_key('domain'):
+            #     script_name = self.api_stage
+            # else:
+            script_name = ''
 
             all_contents = all_contents + \
                            '\n# Automatically added by Zappa:\nSCRIPT_NAME=\'/' + script_name + '\'\n'
