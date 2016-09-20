@@ -29,7 +29,8 @@ class Command(ZappaCommand):
 
         # Load your AWS credentials from ~/.aws/credentials
         self.load_credentials()
-        client = boto3.client('apigateway', region_name=self.zappa_settings[self.api_stage].get('aws_region', 'eu-west-1'))
+        client = boto3.client('apigateway',
+                              region_name=self.zappa_settings[self.api_stage].get('aws_region', 'eu-west-1'))
         apis = filter(lambda api: api['name'] == self.api_name, client.get_rest_apis(limit=500)['items'])
         if len(apis) > 1:
             self.stdout.write(self.style.WARN(
@@ -47,7 +48,10 @@ class Command(ZappaCommand):
             self.lambda_name, json.dumps(command), invocation_type='RequestResponse')
         print response
         if 'LogResult' in response:
-            print(base64.b64decode(response['LogResult']))
+            log_result = base64.b64decode(response['LogResult'])
+            print(log_result)
+            if 'FunctionError' in response:
+                exit(1)
         else:
             print(response)
             import pdb
