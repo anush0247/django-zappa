@@ -81,6 +81,10 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
                 os.environ[key.upper()] = base64.b64decode(event['stage_vars'][key])
             else:
                 os.environ[key.upper()] = event['stage_vars'][key]
+                
+        os_env_to_remove = ["AWS_SESSION_TOKEN", "AWS_SECURITY_TOKEN"]
+        for each_key in os_env_to_remove:
+            del os.environ[each_key]
     except:
         logger.error("Error in stage_vars")
     # If in DEBUG mode, log all raw incoming events.
