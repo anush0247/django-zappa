@@ -74,8 +74,13 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
             print(err)
             raise
     try:
+        base64_env_vars = ["AWS_SECRET_ACCESS_KEY"]
+        
         for key in event.get('stage_vars', dict()).keys():
-            os.environ[key.upper()] = event['stage_vars'][key]
+            if key.upper() in base64_env_vars:
+                os.environ[key.upper()] = base64.b64decode(event['stage_vars'][key])
+            else:
+                os.environ[key.upper()] = event['stage_vars'][key]
     except:
         logger.error("Error in stage_vars")
     # If in DEBUG mode, log all raw incoming events.
