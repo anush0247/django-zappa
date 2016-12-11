@@ -74,11 +74,12 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
             zappa_settings = getattr(importlib.import_module('zappa_deploy'), 'ZAPPA_SETTINGS')
             event["stage_vars"] = get_stage_vars(zappa_settings, stage)
             end_time = time()
-            print(end_time-start_time)
+            print("Get Stage Vars: %f" % (end_time-start_time))
         except ImportError as err:
             print(err)
             raise
     try:
+        start_time3 = time()
         base64_env_vars = ["AWS_SECRET_ACCESS_KEY"]
         
         for key in event.get('stage_vars', dict()).keys():
@@ -93,15 +94,20 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
                 del os.environ[each_key]
             except KeyError:
                 pass
+        end_time3 = time()
+        print("Convert Stage Vars: %f" % (end_time3-start_time3))
     except:
         logger.error("Error in stage_vars")
     # If in DEBUG mode, log all raw incoming events.
+    start_time4 = time()
     django.setup()
     from django.conf import settings
     if settings.DEBUG:
         # logger.info('Zappa Event: {}'.format(event))
         pass
     # This is a normal HTTP request
+    end_time4 = time()
+    print("Django setup Vars: %f" % (end_time4-start_time4))
     if event.get('method', None):
         # Create the environment for WSGI and handle the request
         environ = create_wsgi_request(event, script_name=settings.SCRIPT_NAME)
@@ -186,8 +192,8 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
             input_data = event.get("function_input", {})
             response_dict =  function(**input_data)
             end_time2 = time()
-            print(end_time2 - start_time2)
-            print(end_time2 - start_time)
+            print("Function Exec : %f" % (end_time2 - start_time2))
+            print("Lambda Duration : %f" % (end_time2 - start_time))
             return response_dict
         except ImportError as err:
             print(err)
