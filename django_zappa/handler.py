@@ -176,9 +176,14 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         import_str = ".".join(function_split[0:-1])
         function_name = function_split[-1]
         try:
+            from time import time
+            start_time = time()
             function = getattr(importlib.import_module(import_str), function_name)
             input_data = event.get("function_input", {})
-            return function(**input_data)
+            response_dict =  function(**input_data)
+            end_time = time()
+            print(end_time - start_time)
+            return response_dict
         except ImportError as err:
             print(err)
             raise
