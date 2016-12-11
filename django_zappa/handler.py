@@ -65,11 +65,16 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         print("in the json converter")
         event = json.loads(event)
     time_start = datetime.datetime.now()
+    from time import time
+    start_time = time()
     if event.get("function", None):
         stage = event.get("stage", 'alpha')
         try:
+            
             zappa_settings = getattr(importlib.import_module('zappa_deploy'), 'ZAPPA_SETTINGS')
             event["stage_vars"] = get_stage_vars(zappa_settings, stage)
+            end_time = time()
+            print(end_time-start_time)
         except ImportError as err:
             print(err)
             raise
@@ -176,13 +181,13 @@ def lambda_handler(event, context, settings_name="zappa_settings"):  # NoQA
         import_str = ".".join(function_split[0:-1])
         function_name = function_split[-1]
         try:
-            from time import time
-            start_time = time()
+            start_time2 = time()
             function = getattr(importlib.import_module(import_str), function_name)
             input_data = event.get("function_input", {})
             response_dict =  function(**input_data)
-            end_time = time()
-            print(end_time - start_time)
+            end_time2 = time()
+            print(end_time2 - start_time2)
+            print(end_time2 - start_time)
             return response_dict
         except ImportError as err:
             print(err)
